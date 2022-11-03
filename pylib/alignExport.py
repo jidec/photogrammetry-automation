@@ -1,7 +1,7 @@
 import subprocess
 
 def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_manual_aligned=False, barcode_size="large",barcode_define_distance=0.1,
-                simplify_tris=[1000]):
+                simplify_tris=[50,50,50,50]):
     """
         An automatic script to align and export images from a photogrammetry directory
 
@@ -33,10 +33,15 @@ def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_m
     # processing - opERATION failed on calculate normal model
     define_barcodes_cmds = ["-detectMarkers", "-defineDistance", barcode1, barcode2, barcode_define_distance]
     align_cmds = ["-align", "-setReconstructionRegionAuto", "-calculateNormalModel", "-selectLargestModelComponent",
-                  "-invertTrianglesSelection","-removeSelectedTriangles", "-removeSelectedTriangles", "-smooth", "-unwrap", "-calculateTexture"]
+                  "-invertTrianglesSelection", "-removeSelectedTriangles", "-smooth", "-unwrap", "-calculateTexture"]
     export_cmds = ["-exportSelectedModel", pg_directory + "/morphosource/object_full.obj"]
+
+    model_n = 3
     for t in simplify_tris:
-        export_cmds = export_cmds + ["-simplify",t,"-unwrap","-reprojectTexture","Model 3","Model 7","-exportSelectedModel",pg_directory + "/sketchfab/obj_reduced_" + str(t)]
+        model_string = "Model " + str(model_n)
+        model_n += 1
+        target = pg_directory + "/sketchfab/obj_reduced_" + str(t) + str(model_n) +".obj" #.replace('/','\\')
+        export_cmds = export_cmds + ["-simplify",t,"-unwrap","-reprojectTexture","Model 3",model_string,"-exportSelectedModel",target]
 
     if use_scale_noscale_folders:
         # add the noscale folder

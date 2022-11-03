@@ -1,8 +1,8 @@
 from alignExport import alignExport
 
-current_dir = "C:/Users/jacob.idec/PycharmProjects/photogrammetry-automation/photogrammetry-automation/test_directories/fresh_data/UF-IZ-turtle-"
+current_dir = "C:/Users/jacob.idec/PycharmProjects/photogrammetry-automation/photogrammetry-automation/test_directories/fresh_data/UF-IZ-turtle"
 
-specimen_dir = current_dir + "1"
+specimen_dir = current_dir + "_subset"
 # scale_noscale_folders_needed_1m_large: Applies scaling as 0.1 meters defined distance with small barcodes*. Images must be organized as “images” parent folder with “scale” & “noscale” subfolders
 alignExport(specimen_dir, scale=True, use_scale_noscale_folders=True, barcode_size="large", barcode_define_distance=0.1)
 
