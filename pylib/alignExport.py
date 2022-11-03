@@ -30,6 +30,7 @@ def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_m
     # cmds starts as rc location
     cmds = [rc_exe]
     # set sequences of commands
+    # processing - opERATION failed on calculate normal model
     define_barcodes_cmds = ["-detectMarkers", "-defineDistance", barcode1, barcode2, barcode_define_distance]
     align_cmds = ["-align", "-setReconstructionRegionAuto", "-calculateNormalModel", "-selectLargestModelComponent",
                   "-invertTrianglesSelection","-removeSelectedTriangles", "-removeSelectedTriangles", "-smooth", "-unwrap", "-calculateTexture"]
