@@ -1,6 +1,7 @@
 import subprocess
 
-def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_manual_aligned=False, barcode_size="small",barcode_define_distance=0.1):
+def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_manual_aligned=False, barcode_size="large",barcode_define_distance=0.1,
+                simplify_tris=[1000]):
     """
         An automatic script to align and export images from a photogrammetry directory
 
@@ -17,7 +18,7 @@ def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_m
 
     rc_exe = "C:\\Program Files\\Capturing Reality\\RealityCapture\\RealityCapture.exe"
     dir = pg_directory.replace("/", "\\")
-    image_dir = dir + "\\images"
+    image_dir = dir + "\\series"
 
     if barcode_size == "small":
         barcode1 = "1x20:001a3"
@@ -32,20 +33,22 @@ def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_m
     define_barcodes_cmds = ["-detectMarkers", "-defineDistance", barcode1, barcode2, barcode_define_distance]
     align_cmds = ["-align", "-setReconstructionRegionAuto", "-calculateNormalModel", "-selectLargestModelComponent",
                   "-invertTrianglesSelection","-removeSelectedTriangles", "-removeSelectedTriangles", "-smooth", "-unwrap", "-calculateTexture"]
-    export_cmds = ["-exportSelectedModel", "morphosource\object_full.obj"]
+    export_cmds = ["-exportSelectedModel", pg_directory + "/morphosource/object_full.obj"]
+    for t in simplify_tris:
+        export_cmds = export_cmds + ["-simplify",t,"-unwrap","-reprojectTexture","Model 3","Model 7","-exportSelectedModel",pg_directory + "/sketchfab/obj_reduced_" + str(t)]
 
     if use_scale_noscale_folders:
         # add the noscale folder
         cmds = cmds + ["-addFolder", image_dir + "\\noscale"]
         # align it and export the alignment
-        cmds = cmds + ["-align", "-exportRegistration", "noscaleCO.rcalign"]
+        cmds = cmds + ["-align", "-exportRegistration", image_dir + "/noscaleCO.rcalign"]
         # add the scale folder
         cmds = cmds + ["-addFolder", image_dir + "\\scale"]
         # detect markers, define dist, and save the scaled project
         # if scale:
-        cmds = cmds + define_barcodes_cmds + ["-save", "scaleCO.rcproj"]
+        cmds = cmds + define_barcodes_cmds + ["-save", image_dir + "/scaleCO.rcproj"]
         # import the noscale
-        cmds = cmds + ["-importComponent","noscaleCO.rcalign"]
+        cmds = cmds + ["-importComponent", image_dir + "/noscaleCO.rcalign"]
         # align
         cmds = cmds + align_cmds
         # export
