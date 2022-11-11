@@ -1,20 +1,27 @@
 import subprocess
 
 def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_manual_aligned=False, barcode_size="large",barcode_define_distance=0.1,
-                simplify_tris=[50,50,50,50]):
+                simplify_xml_iters=3): #simplify_tris=[5000,1000,500]):
     """
         An automatic script to align and export images from a photogrammetry directory
 
         :param str pg_directory: the path to the photogrammetry folder for a single specimen
         :param bool scale: specify whether to scale the images by importing a /scale folder
         :param bool load_manual_aligned: specify whether to load a manually created alignment
-            Requires an alignment to first be manually created and saved as "project.rcproj"
-            OR two manual alignments, these are a scaled alignment saved as "scaleCO.rcproj" AND a noscale alignment saved as "noscaleCO.rcalign"
+            Requires either:
+                1. an alignment to first be manually created and saved as "project.rcproj"
+                2. two manual alignments, these are a scaled alignment saved as "scaleCO.rcproj"
+                    AND a noscale alignment saved as "noscaleCO.rcalign"
         :param str barcode_size: the size of barcodes to look for, either "small" or "large"
-        :param float barcode_define_distance: the distance between the barcodes (I think?)
+            Will throw an error if the size barcodes are not found in the images
+        :param float barcode_define_distance: the known distance between the barcodes
+        :param int simplify_xml_iters: if greater than 0, model is simplified using a required "simplificationParams.xml"
+                file in the pg_directory which contains a percent to simplify by in the key "mvsFltTargetTrisCountRel"
+            Then, simplify_xml_iters specifies how many times to simplify by this percent in sequence.
+            For example, if "mvsFltTargetTrisCountRel" is 50% and simplify_xml_iters is 3, the model is simplified
+                to 50% of the original, then 25%, then 12.5%
     """
     # throw error if load_manual_aligned is set to True and the required files for scale=True/False are not found
-    # throw error if
 
     rc_exe = "C:\\Program Files\\Capturing Reality\\RealityCapture\\RealityCapture.exe"
     dir = pg_directory.replace("/", "\\")
@@ -36,12 +43,12 @@ def alignExport(pg_directory, scale=True, use_scale_noscale_folders=True, load_m
                   "-invertTrianglesSelection", "-removeSelectedTriangles", "-smooth", "-unwrap", "-calculateTexture"]
     export_cmds = ["-exportSelectedModel", pg_directory + "/morphosource/object_full.obj"]
 
-    model_n = 3
-    for t in simplify_tris:
+    model_n = 4
+    for t in range(simplify_xml_iters):
         model_string = "Model " + str(model_n)
-        model_n += 1
         target = pg_directory + "/sketchfab/obj_reduced_" + str(t) + str(model_n) +".obj" #.replace('/','\\')
-        export_cmds = export_cmds + ["-simplify",t,"-unwrap","-reprojectTexture","Model 3",model_string,"-exportSelectedModel",target]
+        export_cmds = export_cmds + ["-simplify",pg_directory + "/simplifyParameters.xml","-unwrap","-reprojectTexture","Model 3",model_string,"-exportSelectedModel",target]
+        model_n += 1
 
     if use_scale_noscale_folders:
         # add the noscale folder
