@@ -131,39 +131,68 @@ def pgOtsuMask(img,dilate_intensity=0.3,show=False):
     mask = cv2.resize(mask,initial_dim)
     return(mask)
 
-def makeMasks(pg_directory,show=False):
-    subdirs = [d[0] for d in os.walk(pg_directory)]
+def makeMasks(folder_id, base_folder="N:/NaturalHistory/DIL/Photogrammetry/",mask_dilate_intensity=0.3,print_steps=False,show=False):
+    """
+            An automatic script to align and export images from a photogrammetry directory
 
-    for dir in subdirs:
-        tif_paths = glob.glob(dir + '/*.tif', recursive=True)
-        jpg_paths = glob.glob(dir + '/*.jpg', recursive=True)
-        jpg_paths2 = glob.glob(dir + '/*.JPG', recursive=True)
-        paths = tif_paths + jpg_paths + jpg_paths2
+            :param str OR list folder_id: the path to the photogrammetry folders formatted like so "2022-11/UF_Herp_104033"
+                Can be a single path OR a list of paths like ["2022-11/UF_Herp_104033", "2022-11/UF_Herp_330234"]
+            :param float mask_dilate_intensity: the amount to "puff out" masks
+                Lower values make masks tighter to specimens but can lead to missed portions
+            :param bool print_steps: specify whether to print detailed steps
+            :param bool show: specify whether to show masked images for testing
+                Shown images must be exited before next image will appear
+    """
 
-        start_time = time.time()
-        with ThreadPoolExecutor(max_workers=32) as executor:
-            imgs = list(executor.map(cv2.imread, paths))
-        if show: print("Time taken for img read --- %s seconds ---" % (time.time() - start_time))
+    if not isinstance(folder_id, list):
+        folder_id = [folder_id]
+    for f in folder_id:
+        print("Starting folder " + f + "...")
+        pg_directory = f
+        pg_directory = base_folder + pg_directory + "/images"
+        subdirs = [d[0] for d in os.walk(pg_directory)]
 
-        for img,path in tuple(zip(imgs, paths)) :
-            #start_time = time.time()
-            #img = cv2.imread(path, cv2.IMREAD_COLOR)
-            #print("Time taken for img read --- %s seconds ---" % (time.time() - start_time))
+        print("Finding image paths...")
+        for dir in subdirs:
+            tif_paths = glob.glob(dir + '/*.tif', recursive=True)
+            jpg_paths = glob.glob(dir + '/*.jpg', recursive=True)
+            jpg_paths2 = glob.glob(dir + '/*.JPG', recursive=True)
+            paths = tif_paths + jpg_paths + jpg_paths2
 
+            init_start_time = time.time()
+
+            print("Loading all images in batch...")
             start_time = time.time()
-            mask = pgOtsuMask(img)
-            if show: print("Time taken for full size image --- %s seconds ---" % (time.time() - start_time))
+            with ThreadPoolExecutor(max_workers=32) as executor:
+                imgs = list(executor.map(cv2.imread, paths))
+            if print_steps: print("Time taken for img read --- %s seconds ---" % (time.time() - start_time))
 
-            if show:
-                scale_percent = 20
-                dim = (int(img.shape[1] * scale_percent / 100), int(img.shape[0] * scale_percent / 100))
-                resized = cv2.resize(img, dim)
-                resized_mask = pgOtsuMask(resized)
-                cv2.imshow("img", resized)
-                cv2.waitKey(0)
-                cv2.imshow("mask", resized_mask)
-                cv2.waitKey(0)
+            i = 0
+            for img,path in tuple(zip(imgs, paths)) :
+                #print(path)
+                #start_time = time.time()
+                #img = cv2.imread(path, cv2.IMREAD_COLOR)
+                #print("Time taken for img read --- %s seconds ---" % (time.time() - start_time))
 
-            start_time = time.time()
-            cv2.imwrite(path + ".mask.png",mask)
-            if show: print("Time taken for write --- %s seconds ---" % (time.time() - start_time))
+                start_time = time.time()
+                mask = pgOtsuMask(img,dilate_intensity=mask_dilate_intensity)
+                if print_steps: print("Time taken for full size image --- %s seconds ---" % (time.time() - start_time))
+
+                if show:
+                    scale_percent = 20
+                    dim = (int(img.shape[1] * scale_percent / 100), int(img.shape[0] * scale_percent / 100))
+                    resized = cv2.resize(img, dim)
+                    resized_mask = pgOtsuMask(resized)
+                    cv2.imshow("img", resized)
+                    cv2.waitKey(0)
+                    cv2.imshow("mask", resized_mask)
+                    cv2.waitKey(0)
+
+                start_time = time.time()
+                cv2.imwrite(path + ".mask.png",mask)
+                if print_steps: print("Time taken for write --- %s seconds ---" % (time.time() - start_time))
+                i += 1
+                if (i % 25) == 0:
+                    print("Number of images finished:" + str(i))
+
+        print("Finished one ID: total time taken --- %s seconds ---" % (time.time() - init_start_time))
